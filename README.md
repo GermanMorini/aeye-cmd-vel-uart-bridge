@@ -21,7 +21,8 @@ ros2 launch cmd_vel_uart_bridge control_uart_bridge.launch.py
 
 The launch also serves the HTML UI over HTTP (default `http://0.0.0.0:8000/`).
 The HTML file is installed at `share/cmd_vel_uart_bridge/web/Control.html`.
-Update the `RASPI_HOST` and `CAM_EMBED_URL` values inside the file to match your setup.
+By default it uses the page hostname for the WebSocket and camera URLs.
+Adjust `CAM_EMBED_URL` if your camera is hosted elsewhere.
 
 ## Parameters (selected)
 

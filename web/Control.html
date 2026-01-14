@@ -323,11 +323,11 @@
     // =========================
     //  WebSocket a la Raspy
     // =========================
-    const RASPI_HOST = "100.107.79.45";
+    const RASPI_HOST = window.location.hostname || "127.0.0.1";
     const WS_PORT = 8765;
     const WS_PATH = "/controls";
     // Pagina WebRTC auto-generada por MediaMTX (HTML embebido)
-    const CAM_EMBED_URL = "http://100.107.79.45:8889/camara";
+    const CAM_EMBED_URL = `http://${RASPI_HOST}:8889/camara`;
 
     let socket = null;
     let lastPingSent = 0;
