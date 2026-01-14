@@ -100,6 +100,8 @@ def generate_launch_description():
             ExecuteProcess(
                 cmd=[sys.executable, "-m", "cmd_vel_uart_bridge.control_uart_bridge"],
                 output="screen",
+                emulate_tty=True,
+                additional_env={"PYTHONUNBUFFERED": "1"},
             ),
         ]
     )
