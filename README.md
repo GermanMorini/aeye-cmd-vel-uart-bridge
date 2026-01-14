@@ -19,7 +19,8 @@ Web control (WebSocket -> UART, no ROS topic):
 ros2 launch cmd_vel_uart_bridge control_uart_bridge.launch.py
 ```
 
-The HTML UI is installed at `share/cmd_vel_uart_bridge/web/Control.html`.
+The launch also serves the HTML UI over HTTP (default `http://0.0.0.0:8000/`).
+The HTML file is installed at `share/cmd_vel_uart_bridge/web/Control.html`.
 Update the `RASPI_HOST` and `CAM_EMBED_URL` values inside the file to match your setup.
 
 ## Parameters (selected)
@@ -50,6 +51,9 @@ Web control launch arguments:
 - `ws_inactivity_brake_s` (float, default `0.4`)
 - `ws_resume_min_interval_s` (float, default `0.25`)
 - `ws_resume_hits_required` (int, default `2`)
+- `http_host` (string, default `0.0.0.0`)
+- `http_port` (int, default `8000`)
+- `http_root` (string, default empty, auto-resolve)
 - `serial_port` (string, default empty)
 - `baudrate` (int, default `0`)
 - `serial_timeout` (float, default `-1.0`)

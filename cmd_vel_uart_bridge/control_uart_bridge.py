@@ -12,6 +12,7 @@ import json
 import os
 import threading
 import time
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 import websockets  # pip install websockets
 
@@ -45,6 +46,28 @@ def _env_float(name: str, default: float) -> float:
         return default
 
 
+def _resolve_web_root() -> str:
+    explicit = _env_str("SALUS_HTTP_ROOT", "")
+    if explicit:
+        return explicit
+
+    try:
+        from ament_index_python.packages import get_package_share_directory
+    except Exception:
+        get_package_share_directory = None
+
+    if get_package_share_directory:
+        try:
+            share_dir = get_package_share_directory("cmd_vel_uart_bridge")
+            candidate = os.path.join(share_dir, "web")
+            if os.path.isdir(candidate):
+                return candidate
+        except Exception:
+            pass
+
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "web"))
+
+
 WS_HOST = _env_str("SALUS_WS_HOST", "0.0.0.0")
 WS_PORT = _env_int("SALUS_WS_PORT", 8765)
 WS_PATH = _env_str("SALUS_WS_PATH", "/controls")
@@ -52,10 +75,17 @@ INACTIVITY_BRAKE_S = _env_float("SALUS_WS_INACTIVITY_S", 0.4)
 RESUME_MIN_INTERVAL_S = _env_float("SALUS_WS_RESUME_MIN_INTERVAL_S", 0.25)
 RESUME_HITS_REQUIRED = _env_int("SALUS_WS_RESUME_HITS_REQUIRED", 2)
 
+HTTP_HOST = _env_str("SALUS_HTTP_HOST", "0.0.0.0")
+HTTP_PORT = _env_int("SALUS_HTTP_PORT", 8000)
+HTTP_ROOT = _resolve_web_root()
+HTTP_INDEX = _env_str("SALUS_HTTP_INDEX", "Control.html")
+
 tester = CommsTester()
 running = True
 last_command_ts = 0.0
 _tick_thread = None
+_http_server = None
+_http_thread = None
 _start_ts = time.time()
 _command_count = 0
 failsafe_active = False
@@ -251,8 +281,9 @@ async def handle_client(websocket):
 
 
 async def main_async():
-    global _tick_thread
+    global _tick_thread, _http_server, _http_thread
 
+    _http_server, _http_thread = _start_http_server()
     _tick_thread = threading.Thread(target=tick_loop, daemon=True)
     _tick_thread.start()
 
@@ -262,7 +293,7 @@ async def main_async():
 
 
 def main():
-    global running
+    global running, _http_server
 
     try:
         asyncio.run(main_async())
@@ -279,6 +310,40 @@ def main():
             tester.close()
         except Exception as exc:
             print("[WS-BRIDGE] Error closing tester:", exc)
+        if _http_server:
+            try:
+                _http_server.shutdown()
+                _http_server.server_close()
+            except Exception:
+                pass
+
+
+class _ControlHandler(SimpleHTTPRequestHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, directory=HTTP_ROOT, **kwargs)
+
+    def do_GET(self):
+        if self.path == "/":
+            self.path = f"/{HTTP_INDEX}"
+        super().do_GET()
+
+    def log_message(self, format, *args):
+        print("[HTTP] " + (format % args))
+
+
+def _start_http_server():
+    if HTTP_PORT <= 0:
+        print("[HTTP] Disabled (SALUS_HTTP_PORT <= 0)")
+        return None, None
+    if not os.path.isdir(HTTP_ROOT):
+        print(f"[HTTP] Web root not found: {HTTP_ROOT}")
+        return None, None
+
+    server = ThreadingHTTPServer((HTTP_HOST, HTTP_PORT), _ControlHandler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    print(f"[HTTP] Serving {HTTP_ROOT} at http://{HTTP_HOST}:{HTTP_PORT}/")
+    return server, thread
 
 
 if __name__ == "__main__":
