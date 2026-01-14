@@ -66,6 +66,8 @@ def generate_launch_description():
                 executable="cmd_vel_uart_bridge",
                 name="cmd_vel_uart_bridge",
                 output="screen",
+                emulate_tty=True,
+                additional_env={"PYTHONUNBUFFERED": "1"},
                 parameters=[
                     {
                         "cmd_vel_topic": LaunchConfiguration("cmd_vel_topic"),
