@@ -12,8 +12,8 @@ setup(
         (
             "share/" + package_name + "/launch",
             [
-                "launch/cmd_vel_uart_bridge.launch.py",
-                "launch/control_uart_bridge.launch.py",
+                "launch/bridge.launch.py",
+                "launch/web_control.launch.py",
             ],
         ),
         ("share/" + package_name + "/web", ["web/Control.html"]),

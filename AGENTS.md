@@ -7,7 +7,8 @@ Role
 Repo map (package)
 - `cmd_vel_uart_bridge/cmd_vel_uart_bridge/cmd_vel_uart_bridge_node.py`: ROS 2 node bridging `/cmd_vel_safe` to UART.
 - `cmd_vel_uart_bridge/cmd_vel_uart_bridge/test_comms.py`: UART driver copy from RASPY_SALUS (do not modify unless explicitly asked).
-- `cmd_vel_uart_bridge/launch/cmd_vel_uart_bridge.launch.py`: launch entrypoint.
+- `cmd_vel_uart_bridge/launch/bridge.launch.py`: launch entrypoint for ROS -> UART bridge.
+- `cmd_vel_uart_bridge/launch/web_control.launch.py`: launch entrypoint for web control bridge.
 - `cmd_vel_uart_bridge/package.xml`, `cmd_vel_uart_bridge/setup.py`, `cmd_vel_uart_bridge/setup.cfg`.
 - `cmd_vel_uart_bridge/README.md`: usage and parameters.
 

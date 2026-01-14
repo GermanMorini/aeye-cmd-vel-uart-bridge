@@ -10,13 +10,13 @@ ros2 run cmd_vel_uart_bridge cmd_vel_uart_bridge
 ```
 
 ```bash
-ros2 launch cmd_vel_uart_bridge cmd_vel_uart_bridge.launch.py
+ros2 launch cmd_vel_uart_bridge bridge.launch.py
 ```
 
 Web control (WebSocket -> UART, no ROS topic):
 
 ```bash
-ros2 launch cmd_vel_uart_bridge control_uart_bridge.launch.py
+ros2 launch cmd_vel_uart_bridge web_control.launch.py
 ```
 
 The launch also serves the HTML UI over HTTP (default `http://0.0.0.0:8000/`).
