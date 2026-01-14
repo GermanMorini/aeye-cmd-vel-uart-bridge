@@ -13,6 +13,15 @@ ros2 run cmd_vel_uart_bridge cmd_vel_uart_bridge
 ros2 launch cmd_vel_uart_bridge cmd_vel_uart_bridge.launch.py
 ```
 
+Web control (WebSocket -> UART, no ROS topic):
+
+```bash
+ros2 launch cmd_vel_uart_bridge control_uart_bridge.launch.py
+```
+
+The HTML UI is installed at `share/cmd_vel_uart_bridge/web/Control.html`.
+Update the `RASPI_HOST` and `CAM_EMBED_URL` values inside the file to match your setup.
+
 ## Parameters (selected)
 
 - `cmd_vel_topic` (string, default `/cmd_vel_safe`)
@@ -33,7 +42,23 @@ Serial overrides (optional, use to set env vars for the driver):
 - `status_timeout` (float, default -1.0)
 - `gpio_off_list` (string, default empty)
 
+Web control launch arguments:
+
+- `ws_host` (string, default `0.0.0.0`)
+- `ws_port` (int, default `8765`)
+- `ws_path` (string, default `/controls`)
+- `ws_inactivity_brake_s` (float, default `0.4`)
+- `ws_resume_min_interval_s` (float, default `0.25`)
+- `ws_resume_hits_required` (int, default `2`)
+- `serial_port` (string, default empty)
+- `baudrate` (int, default `0`)
+- `serial_timeout` (float, default `-1.0`)
+- `gpio_relay` (int, default `-1`)
+- `status_timeout` (float, default `-1.0`)
+- `gpio_off_list` (string, default empty)
+
 ## Dependencies
 
 - `pyserial` is required to talk to the UART.
 - `RPi.GPIO` is optional (only needed on Raspberry Pi for the relay).
+- `websockets` is required for the WebSocket control server.

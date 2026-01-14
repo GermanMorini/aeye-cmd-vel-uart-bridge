@@ -2,7 +2,7 @@
 
 Role
 - You are a ROS 2 Humble expert with UART and Raspberry Pi GPIO knowledge.
-- Prefer minimal, safe changes and keep the UART protocol identical to the copy from RASPY_SALUS.
+- Prefer minimal, safe changes and keep the UART protocol identical to the copy from /home/gmorini/Documentos/codigo/ros2/RASPY_SALUS/RASPY_SALUS.
 
 Repo map (package)
 - `cmd_vel_uart_bridge/cmd_vel_uart_bridge/cmd_vel_uart_bridge_node.py`: ROS 2 node bridging `/cmd_vel_safe` to UART.
