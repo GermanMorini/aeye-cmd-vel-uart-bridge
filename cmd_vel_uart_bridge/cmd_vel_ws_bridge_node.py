@@ -1,32 +1,97 @@
+import asyncio
+import json
 import math
-import os
+import threading
 import time
 
 import rclpy
-from rclpy.node import Node
 from geometry_msgs.msg import Twist
+from rclpy.node import Node
 
-from cmd_vel_uart_bridge import test_comms
+import websockets
 
 
-class DryRunDriver:
+class WsSender:
+    def __init__(self, url: str, reconnect_s: float, logger):
+        self._url = url
+        self._reconnect_s = reconnect_s
+        self._logger = logger
+        self._loop = None
+        self._queue = None
+        self._thread = None
+        self._stop_event = threading.Event()
+        self._connected = False
+
+    def start(self):
+        if self._thread and self._thread.is_alive():
+            return
+        self._thread = threading.Thread(target=self._run, daemon=True)
+        self._thread.start()
+
+    def _run(self):
+        self._loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self._loop)
+        self._queue = asyncio.Queue(maxsize=1)
+        try:
+            self._loop.run_until_complete(self._main())
+        finally:
+            self._loop.close()
+
+    async def _main(self):
+        while not self._stop_event.is_set():
+            try:
+                async with websockets.connect(self._url) as ws:
+                    if not self._connected:
+                        self._logger.info(f"WS connected: {self._url}")
+                    self._connected = True
+                    while not self._stop_event.is_set():
+                        try:
+                            data = await asyncio.wait_for(self._queue.get(), timeout=0.1)
+                        except asyncio.TimeoutError:
+                            continue
+                        await ws.send(data)
+            except Exception as exc:
+                if self._connected:
+                    self._logger.warn(f"WS disconnected: {exc}")
+                else:
+                    self._logger.warn(f"WS connect failed: {exc}")
+                self._connected = False
+                if self._stop_event.is_set():
+                    break
+                await asyncio.sleep(self._reconnect_s)
+        self._connected = False
+
+    def send(self, payload: dict):
+        if not self._loop or not self._loop.is_running():
+            return
+        data = json.dumps(payload)
+
+        def _enqueue():
+            if self._queue is None:
+                return
+            try:
+                while True:
+                    self._queue.get_nowait()
+            except asyncio.QueueEmpty:
+                pass
+            try:
+                self._queue.put_nowait(data)
+            except asyncio.QueueFull:
+                pass
+
+        self._loop.call_soon_threadsafe(_enqueue)
+
+    def stop(self):
+        self._stop_event.set()
+        if self._loop and self._loop.is_running():
+            self._loop.call_soon_threadsafe(lambda: None)
+        if self._thread:
+            self._thread.join(timeout=1.0)
+
+
+class CmdVelWsBridge(Node):
     def __init__(self):
-        self.targets = test_comms.TargetState()
-        self.drive_enabled = False
-        self.estop = False
-        self.allow_reverse = False
-        self.auto_grant_reverse = False
-
-    def start_background_loop(self):
-        return
-
-    def close(self):
-        return
-
-
-class CmdVelUartBridge(Node):
-    def __init__(self):
-        super().__init__("cmd_vel_uart_bridge")
+        super().__init__("cmd_vel_ws_bridge")
 
         self.declare_parameter("cmd_vel_topic", "/cmd_vel_safe")
         self.declare_parameter("max_linear_speed", 2.77)
@@ -38,20 +103,14 @@ class CmdVelUartBridge(Node):
         self.declare_parameter("deadband_linear", 0.02)
         self.declare_parameter("deadband_angular", 0.02)
         self.declare_parameter("cmd_timeout", 0.5)
-        self.declare_parameter("watchdog_hz", 10.0)
+        self.declare_parameter("send_hz", 20.0)
         self.declare_parameter("brake_on_stop_percent", 60)
         self.declare_parameter("brake_on_timeout_percent", 100)
+        self.declare_parameter("ws_url", "ws://100.107.79.45:8765/controls")
+        self.declare_parameter("ws_reconnect_s", 1.0)
         self.declare_parameter("dry_run", False)
         self.declare_parameter("dry_run_log_interval", 1.0)
         self.declare_parameter("tx_log_interval", 0.2)
-        self.declare_parameter("auto_grant_reverse", True)
-
-        self.declare_parameter("serial_port", "")
-        self.declare_parameter("baudrate", 0)
-        self.declare_parameter("serial_timeout", -1.0)
-        self.declare_parameter("gpio_relay", -1)
-        self.declare_parameter("status_timeout", -1.0)
-        self.declare_parameter("gpio_off_list", "")
 
         self.cmd_vel_topic = self.get_parameter("cmd_vel_topic").value
         self.max_linear_speed = float(self.get_parameter("max_linear_speed").value)
@@ -63,68 +122,42 @@ class CmdVelUartBridge(Node):
         self.deadband_linear = float(self.get_parameter("deadband_linear").value)
         self.deadband_angular = float(self.get_parameter("deadband_angular").value)
         self.cmd_timeout = float(self.get_parameter("cmd_timeout").value)
-        self.watchdog_hz = float(self.get_parameter("watchdog_hz").value)
+        self.send_hz = float(self.get_parameter("send_hz").value)
         self.brake_on_stop_percent = int(
             self.get_parameter("brake_on_stop_percent").value
         )
         self.brake_on_timeout_percent = int(
             self.get_parameter("brake_on_timeout_percent").value
         )
+        self.ws_url = str(self.get_parameter("ws_url").value)
+        self.ws_reconnect_s = float(self.get_parameter("ws_reconnect_s").value)
         self.dry_run = bool(self.get_parameter("dry_run").value)
         self.dry_run_log_interval = float(
             self.get_parameter("dry_run_log_interval").value
         )
         self.tx_log_interval = float(self.get_parameter("tx_log_interval").value)
-        self.auto_grant_reverse = bool(self.get_parameter("auto_grant_reverse").value)
 
-        self._apply_serial_overrides()
         self._normalize_params()
 
-        self._driver = self._create_driver()
-        self._driver.drive_enabled = False
-        self._driver.estop = False
+        self._sender = None
+        if self.dry_run:
+            self.get_logger().info("dry_run enabled: skipping WebSocket connection")
+        else:
+            self._sender = WsSender(self.ws_url, self.ws_reconnect_s, self.get_logger())
+            self._sender.start()
 
+        self._last_cmd = None
         self._last_cmd_time = None
         self._timed_out = True
         self._last_dry_log = 0.0
         self._last_tx_log = 0.0
 
         self.create_subscription(Twist, self.cmd_vel_topic, self._cmd_cb, 10)
-        self._watchdog_timer = self.create_timer(
-            1.0 / self.watchdog_hz, self._watchdog_tick
-        )
-
-        self._apply_timeout()
-        self._start_driver_loop()
+        self._send_timer = self.create_timer(1.0 / self.send_hz, self._send_tick)
 
         self.get_logger().info(
-            f"Bridging {self.cmd_vel_topic} -> UART (dry_run={self.dry_run})"
+            f"Forwarding {self.cmd_vel_topic} -> {self.ws_url} (dry_run={self.dry_run})"
         )
-
-    def _apply_serial_overrides(self):
-        serial_port = self.get_parameter("serial_port").value
-        if serial_port:
-            os.environ["SALUS_SERIAL_PORT"] = serial_port
-
-        baudrate = int(self.get_parameter("baudrate").value)
-        if baudrate > 0:
-            os.environ["SALUS_BAUDRATE"] = str(baudrate)
-
-        serial_timeout = float(self.get_parameter("serial_timeout").value)
-        if serial_timeout >= 0.0:
-            os.environ["SALUS_TIMEOUT_S"] = str(serial_timeout)
-
-        gpio_relay = int(self.get_parameter("gpio_relay").value)
-        if gpio_relay >= 0:
-            os.environ["SALUS_GPIO_RELAY"] = str(gpio_relay)
-
-        status_timeout = float(self.get_parameter("status_timeout").value)
-        if status_timeout >= 0.0:
-            os.environ["SALUS_STATUS_TIMEOUT_S"] = str(status_timeout)
-
-        gpio_off_list = self.get_parameter("gpio_off_list").value
-        if gpio_off_list:
-            os.environ["SALUS_GPIO_OFF_LIST"] = gpio_off_list
 
     def _normalize_params(self):
         if self.max_linear_speed <= 0.0:
@@ -136,9 +169,11 @@ class CmdVelUartBridge(Node):
         if self.cmd_timeout <= 0.0:
             self.get_logger().warn("cmd_timeout <= 0, forcing 0.5")
             self.cmd_timeout = 0.5
-        if self.watchdog_hz <= 0.0:
-            self.get_logger().warn("watchdog_hz <= 0, forcing 10")
-            self.watchdog_hz = 10.0
+        if self.send_hz <= 0.0:
+            self.get_logger().warn("send_hz <= 0, forcing 20")
+            self.send_hz = 20.0
+        if self.ws_reconnect_s <= 0.0:
+            self.ws_reconnect_s = 1.0
 
         if self.deadband_linear < 0.0:
             self.deadband_linear = 0.0
@@ -191,48 +226,65 @@ class CmdVelUartBridge(Node):
         if self.tx_log_interval < 0.0:
             self.tx_log_interval = 0.0
 
-    def _create_driver(self):
-        if self.dry_run:
-            return DryRunDriver()
-
-        try:
-            driver = test_comms.CommsTester()
-        except Exception as exc:
-            raise RuntimeError(f"Failed to start UART driver: {exc}") from exc
-
-        if hasattr(driver, "auto_grant_reverse"):
-            driver.auto_grant_reverse = self.auto_grant_reverse
-
-        return driver
-
-    def _start_driver_loop(self):
-        if self.dry_run:
-            return
-        if hasattr(self._driver, "start_background_loop"):
-            self._driver.start_background_loop()
-
     def _cmd_cb(self, msg: Twist):
+        self._last_cmd = msg
         self._last_cmd_time = time.monotonic()
-        self._apply_command(msg)
         if self._timed_out:
             self.get_logger().info("cmd_vel recovered")
         self._timed_out = False
 
-    def _apply_command(self, msg: Twist):
-        linear_x = float(msg.linear.x)
-        angular_z = float(msg.angular.z)
+    def _send_tick(self):
+        now = time.monotonic()
+        timed_out = self._last_cmd_time is None or (
+            now - self._last_cmd_time > self.cmd_timeout
+        )
+
+        if timed_out:
+            if not self._timed_out:
+                self.get_logger().warn("cmd_vel timeout, applying brake")
+        else:
+            if self._timed_out:
+                self.get_logger().info("cmd_vel active")
+
+        self._timed_out = timed_out
+
+        linear_x = float(self._last_cmd.linear.x) if self._last_cmd else 0.0
+        angular_z = float(self._last_cmd.angular.z) if self._last_cmd else 0.0
 
         throttle = self._normalize(linear_x, self.max_linear_speed, self.deadband_linear)
         accel_cmd = int(round(throttle * 100.0))
         steer_cmd = self._compute_steer_cmd(linear_x, angular_z)
 
-        if abs(linear_x) <= self.deadband_linear and abs(angular_z) <= self.deadband_angular:
-            brake_cmd = self.brake_on_stop_percent
+        if timed_out:
+            brake_cmd = self.brake_on_timeout_percent
             accel_cmd = 0
+            steer_cmd = 0
+            drive_enabled = False
         else:
-            brake_cmd = 0
+            drive_enabled = True
+            if (
+                abs(linear_x) <= self.deadband_linear
+                and abs(angular_z) <= self.deadband_angular
+            ):
+                brake_cmd = self.brake_on_stop_percent
+                accel_cmd = 0
+            else:
+                brake_cmd = 0
 
-        self._set_targets(steer_cmd, accel_cmd, brake_cmd, drive_enabled=True)
+        payload = {
+            "throttle": self._clamp(accel_cmd, -100, 100) / 100.0,
+            "steer": self._clamp(steer_cmd, -100, 100) / 100.0,
+            "brake": brake_cmd > 0,
+            "brake_percent": brake_cmd,
+            "drive_enabled": drive_enabled,
+        }
+
+        if self.dry_run:
+            self._maybe_log_dry_run(now, payload)
+            return
+
+        self._maybe_log_tx(now, payload)
+        self._sender.send(payload)
 
     def _compute_steer_cmd(self, linear_x: float, angular_z: float) -> int:
         if abs(angular_z) <= self.deadband_angular:
@@ -265,65 +317,21 @@ class CmdVelUartBridge(Node):
 
         return int(round(steer_norm * 100.0))
 
-    def _apply_timeout(self):
-        self._set_targets(
-            steer=0,
-            accel=0,
-            brake=self.brake_on_timeout_percent,
-            drive_enabled=False,
-        )
-
-    def _watchdog_tick(self):
-        now = time.monotonic()
-        timed_out = self._last_cmd_time is None or (
-            now - self._last_cmd_time > self.cmd_timeout
-        )
-
-        if timed_out:
-            if not self._timed_out:
-                self.get_logger().warn("cmd_vel timeout, applying brake")
-            self._apply_timeout()
-        else:
-            if self._timed_out:
-                self.get_logger().info("cmd_vel active")
-
-        self._timed_out = timed_out
-        self._maybe_log_dry_run(now)
-        self._maybe_log_tx(now)
-
-    def _maybe_log_dry_run(self, now: float):
-        if not self.dry_run or self.dry_run_log_interval <= 0.0:
+    def _maybe_log_dry_run(self, now: float, payload: dict):
+        if self.dry_run_log_interval <= 0.0:
             return
         if now - self._last_dry_log < self.dry_run_log_interval:
             return
         self._last_dry_log = now
-        self.get_logger().info(
-            "dry_run targets="
-            f"steer={self._driver.targets.steer} "
-            f"accel={self._driver.targets.accel} "
-            f"brake={self._driver.targets.brake} "
-            f"drive={'on' if self._driver.drive_enabled else 'off'}"
-        )
+        self.get_logger().info(f"dry_run payload={payload}")
 
-    def _maybe_log_tx(self, now: float):
-        if self.dry_run or self.tx_log_interval <= 0.0:
+    def _maybe_log_tx(self, now: float, payload: dict):
+        if self.tx_log_interval <= 0.0:
             return
         if now - self._last_tx_log < self.tx_log_interval:
             return
         self._last_tx_log = now
-        self.get_logger().info(
-            "tx targets="
-            f"steer={self._driver.targets.steer} "
-            f"accel={self._driver.targets.accel} "
-            f"brake={self._driver.targets.brake} "
-            f"drive={'on' if self._driver.drive_enabled else 'off'}"
-        )
-
-    def _set_targets(self, steer: int, accel: int, brake: int, drive_enabled: bool):
-        self._driver.targets.steer = self._clamp(steer, -100, 100)
-        self._driver.targets.accel = self._clamp(accel, -100, 100)
-        self._driver.targets.brake = self._clamp(brake, 0, 100)
-        self._driver.drive_enabled = drive_enabled
+        self.get_logger().info(f"tx payload={payload}")
 
     @staticmethod
     def _normalize(value: float, max_value: float, deadband: float) -> float:
@@ -347,18 +355,15 @@ class CmdVelUartBridge(Node):
         return value
 
     def shutdown(self):
-        if self._driver:
-            try:
-                self._driver.close()
-            except Exception as exc:
-                self.get_logger().warn(f"Error closing driver: {exc}")
+        if self._sender:
+            self._sender.stop()
 
 
 def main():
     rclpy.init()
     node = None
     try:
-        node = CmdVelUartBridge()
+        node = CmdVelWsBridge()
         rclpy.spin(node)
     except KeyboardInterrupt:
         if node:

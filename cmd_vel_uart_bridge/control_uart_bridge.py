@@ -3,7 +3,8 @@
 WebSocket -> UART bridge for Control.html.
 
 - Listens on ws://0.0.0.0:8765/controls (adjust WS_HOST/PORT/PATH if needed).
-- Receives JSON with throttle (-1..1), steer (-1..1), brake (bool), gear (1/2).
+- Receives JSON with throttle (-1..1), steer (-1..1), brake (bool) or
+  brake_percent (0..100), optional drive_enabled, gear (1/2).
 - Maps to CommsTester (test_comms.py) to send over UART.
 - Cuts accel and disables drive if no command arrives in INACTIVITY_BRAKE_S.
 """
@@ -113,7 +114,12 @@ def apply_web_command(payload):
 
     throttle = _clamp(payload.get("throttle"), -1.0, 1.0, 0.0)
     steer_norm = _clamp(payload.get("steer"), -1.0, 1.0, 0.0)
-    brake = bool(payload.get("brake", False))
+    brake_percent = payload.get("brake_percent", payload.get("brake_pct"))
+    if brake_percent is not None:
+        brake_cmd = int(_clamp(brake_percent, 0.0, 100.0, 0.0))
+    else:
+        brake_bool = bool(payload.get("brake", False))
+        brake_cmd = 100 if brake_bool else 0
 
     try:
         gear = int(payload.get("gear", 2))
@@ -152,15 +158,19 @@ def apply_web_command(payload):
             )
             return
 
-    if brake:
+    if brake_cmd > 0:
         tester.targets.accel = 0
-        tester.targets.brake = 100
+        tester.targets.brake = brake_cmd
     else:
         tester.targets.accel = accel_cmd
         tester.targets.brake = 0
 
     tester.targets.steer = steer_cmd
-    tester.drive_enabled = True  # each command re-enables drive
+    drive_enabled = payload.get("drive_enabled")
+    if drive_enabled is None:
+        tester.drive_enabled = True  # each command re-enables drive
+    else:
+        tester.drive_enabled = bool(drive_enabled)
 
     _command_count += 1
     last_command_ts = now

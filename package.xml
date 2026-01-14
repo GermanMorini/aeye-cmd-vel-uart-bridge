@@ -9,6 +9,12 @@
 
   <depend>rclpy</depend>
   <depend>geometry_msgs</depend>
+  <exec_depend>python3-serial</exec_depend>
+  <exec_depend>python3-serial-asyncio</exec_depend>
+  <exec_depend>python3-gpiozero</exec_depend>
+  <exec_depend>python3-crccheck</exec_depend>
+  <exec_depend>python3-pydantic</exec_depend>
+  <exec_depend>python3-pydantic-settings</exec_depend>
   <exec_depend>python3-websockets</exec_depend>
 
   <export>

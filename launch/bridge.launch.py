@@ -17,6 +17,18 @@ def generate_launch_description():
                 "max_angular_speed", default_value="1.7"
             ),
             DeclareLaunchArgument(
+                "turning_radius", default_value="3.0"
+            ),
+            DeclareLaunchArgument(
+                "max_steer_deg", default_value="30.0"
+            ),
+            DeclareLaunchArgument(
+                "steer_mode", default_value="yaw_rate"
+            ),
+            DeclareLaunchArgument(
+                "invert_steer", default_value="false"
+            ),
+            DeclareLaunchArgument(
                 "deadband_linear", default_value="0.02"
             ),
             DeclareLaunchArgument(
@@ -38,7 +50,10 @@ def generate_launch_description():
                 "dry_run", default_value="false"
             ),
             DeclareLaunchArgument(
-                "dry_run_log_interval", default_value="1.0"
+                "dry_run_log_interval", default_value="0.2"
+            ),
+            DeclareLaunchArgument(
+                "tx_log_interval", default_value="0.2"
             ),
             DeclareLaunchArgument(
                 "auto_grant_reverse", default_value="true"
@@ -73,6 +88,10 @@ def generate_launch_description():
                         "cmd_vel_topic": LaunchConfiguration("cmd_vel_topic"),
                         "max_linear_speed": LaunchConfiguration("max_linear_speed"),
                         "max_angular_speed": LaunchConfiguration("max_angular_speed"),
+                        "turning_radius": LaunchConfiguration("turning_radius"),
+                        "max_steer_deg": LaunchConfiguration("max_steer_deg"),
+                        "steer_mode": LaunchConfiguration("steer_mode"),
+                        "invert_steer": LaunchConfiguration("invert_steer"),
                         "deadband_linear": LaunchConfiguration("deadband_linear"),
                         "deadband_angular": LaunchConfiguration("deadband_angular"),
                         "cmd_timeout": LaunchConfiguration("cmd_timeout"),
@@ -87,6 +106,7 @@ def generate_launch_description():
                         "dry_run_log_interval": LaunchConfiguration(
                             "dry_run_log_interval"
                         ),
+                        "tx_log_interval": LaunchConfiguration("tx_log_interval"),
                         "auto_grant_reverse": LaunchConfiguration(
                             "auto_grant_reverse"
                         ),
