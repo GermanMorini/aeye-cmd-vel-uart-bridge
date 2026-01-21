@@ -94,9 +94,11 @@ class CmdVelWsBridge(Node):
         super().__init__("cmd_vel_ws_bridge")
 
         self.declare_parameter("cmd_vel_topic", "/cmd_vel_safe")
-        self.declare_parameter("max_linear_speed", 2.77)
-        self.declare_parameter("max_angular_speed", 1.7)
-        self.declare_parameter("turning_radius", 3.0)
+        self.declare_parameter("max_linear_speed", 4.16)
+        self.declare_parameter("min_effective_speed", 0.0)
+        self.declare_parameter("linear_speed_offset", 1.5)
+        self.declare_parameter("max_angular_speed", 2.5)
+        self.declare_parameter("turning_radius", 1.7)
         self.declare_parameter("max_steer_deg", 30.0)
         self.declare_parameter("steer_mode", "yaw_rate")
         self.declare_parameter("invert_steer", False)
@@ -106,7 +108,7 @@ class CmdVelWsBridge(Node):
         self.declare_parameter("send_hz", 20.0)
         self.declare_parameter("brake_on_stop_percent", 60)
         self.declare_parameter("brake_on_timeout_percent", 100)
-        self.declare_parameter("ws_url", "ws://100.107.79.45:8765/controls")
+        self.declare_parameter("ws_url", "ws://100.111.4.7:8765/controls")
         self.declare_parameter("ws_reconnect_s", 1.0)
         self.declare_parameter("dry_run", False)
         self.declare_parameter("dry_run_log_interval", 1.0)
@@ -114,6 +116,12 @@ class CmdVelWsBridge(Node):
 
         self.cmd_vel_topic = self.get_parameter("cmd_vel_topic").value
         self.max_linear_speed = float(self.get_parameter("max_linear_speed").value)
+        self.min_effective_speed = float(
+            self.get_parameter("min_effective_speed").value
+        )
+        self.linear_speed_offset = float(
+            self.get_parameter("linear_speed_offset").value
+        )
         self.max_angular_speed = float(self.get_parameter("max_angular_speed").value)
         self.turning_radius = float(self.get_parameter("turning_radius").value)
         self.max_steer_deg = float(self.get_parameter("max_steer_deg").value)
@@ -163,6 +171,20 @@ class CmdVelWsBridge(Node):
         if self.max_linear_speed <= 0.0:
             self.get_logger().warn("max_linear_speed <= 0, forcing 1.0")
             self.max_linear_speed = 1.0
+        if self.min_effective_speed < 0.0:
+            self.min_effective_speed = 0.0
+        if self.min_effective_speed > self.max_linear_speed:
+            self.get_logger().warn(
+                "min_effective_speed > max_linear_speed, clamping to max_linear_speed"
+            )
+            self.min_effective_speed = self.max_linear_speed
+        if self.linear_speed_offset < 0.0:
+            self.linear_speed_offset = 0.0
+        if self.linear_speed_offset > self.max_linear_speed:
+            self.get_logger().warn(
+                "linear_speed_offset > max_linear_speed, clamping to max_linear_speed"
+            )
+            self.linear_speed_offset = self.max_linear_speed
         if self.max_angular_speed <= 0.0:
             self.get_logger().warn("max_angular_speed <= 0, forcing 1.0")
             self.max_angular_speed = 1.0
@@ -251,7 +273,7 @@ class CmdVelWsBridge(Node):
         linear_x = float(self._last_cmd.linear.x) if self._last_cmd else 0.0
         angular_z = float(self._last_cmd.angular.z) if self._last_cmd else 0.0
 
-        throttle = self._normalize(linear_x, self.max_linear_speed, self.deadband_linear)
+        throttle = self._normalize_linear(linear_x)
         accel_cmd = int(round(throttle * 100.0))
         steer_cmd = self._compute_steer_cmd(linear_x, angular_z)
 
@@ -345,6 +367,21 @@ class CmdVelWsBridge(Node):
         if scaled < -1.0:
             return -1.0
         return float(scaled)
+
+    def _normalize_linear(self, value: float) -> float:
+        if abs(value) <= self.deadband_linear:
+            return 0.0
+        if self.max_linear_speed <= 0.0:
+            return 0.0
+        magnitude = abs(value)
+        if self.linear_speed_offset > 0.0:
+            magnitude += self.linear_speed_offset
+        if self.min_effective_speed > 0.0 and magnitude < self.min_effective_speed:
+            magnitude = self.min_effective_speed
+        scaled = magnitude / self.max_linear_speed
+        if scaled > 1.0:
+            scaled = 1.0
+        return float(math.copysign(scaled, value))
 
     @staticmethod
     def _clamp(value: int, lo: int, hi: int) -> int:

@@ -42,7 +42,9 @@ forwards `/cmd_vel_safe` after scaling and deadband.
 ## Parameters (selected)
 
 - `cmd_vel_topic` (string, default `/cmd_vel_safe`)
-- `max_linear_speed` (float, default `2.77` m/s)
+- `max_linear_speed` (float, default `4.16` m/s)
+- `min_effective_speed` (float, default `0.0` m/s, minimum non-zero command)
+- `linear_speed_offset` (float, default `1.5` m/s, added to non-zero commands)
 - `max_angular_speed` (float, default `1.7` rad/s)
 - `turning_radius` (float, default `3.0` m, overrides `max_angular_speed` when > 0)
 - `max_steer_deg` (float, default `30.0` deg, max steering angle)
@@ -84,11 +86,13 @@ Web control launch arguments:
 
 WebSocket cmd_vel forwarder launch arguments:
 
-- `ws_url` (string, default `ws://100.107.79.45:8765/controls`)
+- `ws_url` (string, default `ws://100.111.4.7:8765/controls`)
 - `ws_reconnect_s` (float, default `1.0`)
 - `send_hz` (float, default `20.0`)
 - `cmd_vel_topic` (string, default `/cmd_vel_safe`)
-- `max_linear_speed` (float, default `2.77` m/s)
+- `max_linear_speed` (float, default `4.16` m/s)
+- `min_effective_speed` (float, default `0.0` m/s, minimum non-zero command)
+- `linear_speed_offset` (float, default `1.5` m/s, added to non-zero commands)
 - `max_angular_speed` (float, default `1.7` rad/s)
 - `turning_radius` (float, default `3.0` m, overrides `max_angular_speed` when > 0)
 - `max_steer_deg` (float, default `30.0` deg, max steering angle)
@@ -106,7 +110,9 @@ WebSocket cmd_vel forwarder launch arguments:
 Salus v2 bridge launch arguments (optional alternative):
 
 - `cmd_vel_topic` (string, default `/cmd_vel_safe`)
-- `max_linear_speed` (float, default `2.77` m/s)
+- `max_linear_speed` (float, default `4.16` m/s)
+- `min_effective_speed` (float, default `0.0` m/s, minimum non-zero command)
+- `linear_speed_offset` (float, default `1.5` m/s, added to non-zero commands)
 - `max_angular_speed` (float, default `1.7` rad/s)
 - `turning_radius` (float, default `3.0` m, overrides `max_angular_speed` when > 0)
 - `max_steer_deg` (float, default `30.0` deg, max steering angle)

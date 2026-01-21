@@ -8,7 +8,9 @@ def generate_launch_description():
     return LaunchDescription(
         [
             DeclareLaunchArgument("cmd_vel_topic", default_value="/cmd_vel_safe"),
-            DeclareLaunchArgument("max_linear_speed", default_value="2.77"),
+            DeclareLaunchArgument("max_linear_speed", default_value="4.16"),
+            DeclareLaunchArgument("min_effective_speed", default_value="0.0"),
+            DeclareLaunchArgument("linear_speed_offset", default_value="1.5"),
             DeclareLaunchArgument("max_angular_speed", default_value="1.7"),
             DeclareLaunchArgument("turning_radius", default_value="3.0"),
             DeclareLaunchArgument("max_steer_deg", default_value="30.0"),
@@ -42,6 +44,12 @@ def generate_launch_description():
                     {
                         "cmd_vel_topic": LaunchConfiguration("cmd_vel_topic"),
                         "max_linear_speed": LaunchConfiguration("max_linear_speed"),
+                        "min_effective_speed": LaunchConfiguration(
+                            "min_effective_speed"
+                        ),
+                        "linear_speed_offset": LaunchConfiguration(
+                            "linear_speed_offset"
+                        ),
                         "max_angular_speed": LaunchConfiguration("max_angular_speed"),
                         "turning_radius": LaunchConfiguration("turning_radius"),
                         "max_steer_deg": LaunchConfiguration("max_steer_deg"),

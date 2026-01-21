@@ -8,7 +8,9 @@ def generate_launch_description():
     return LaunchDescription(
         [
             DeclareLaunchArgument("cmd_vel_topic", default_value="/cmd_vel_safe"),
-            DeclareLaunchArgument("max_linear_speed", default_value="2.77"),
+            DeclareLaunchArgument("max_linear_speed", default_value="4.16"),
+            DeclareLaunchArgument("min_effective_speed", default_value="0.0"),
+            DeclareLaunchArgument("linear_speed_offset", default_value="1.5"),
             DeclareLaunchArgument("max_angular_speed", default_value="1.7"),
             DeclareLaunchArgument("turning_radius", default_value="3.0"),
             DeclareLaunchArgument("max_steer_deg", default_value="30.0"),
@@ -21,7 +23,7 @@ def generate_launch_description():
             DeclareLaunchArgument("brake_on_stop_percent", default_value="60"),
             DeclareLaunchArgument("brake_on_timeout_percent", default_value="100"),
             DeclareLaunchArgument(
-                "ws_url", default_value="ws://100.107.79.45:8765/controls"
+                "ws_url", default_value="ws://100.111.4.7:8765/controls"
             ),
             DeclareLaunchArgument("ws_reconnect_s", default_value="1.0"),
             DeclareLaunchArgument("dry_run", default_value="false"),
@@ -38,6 +40,12 @@ def generate_launch_description():
                     {
                         "cmd_vel_topic": LaunchConfiguration("cmd_vel_topic"),
                         "max_linear_speed": LaunchConfiguration("max_linear_speed"),
+                        "min_effective_speed": LaunchConfiguration(
+                            "min_effective_speed"
+                        ),
+                        "linear_speed_offset": LaunchConfiguration(
+                            "linear_speed_offset"
+                        ),
                         "max_angular_speed": LaunchConfiguration("max_angular_speed"),
                         "turning_radius": LaunchConfiguration("turning_radius"),
                         "max_steer_deg": LaunchConfiguration("max_steer_deg"),
