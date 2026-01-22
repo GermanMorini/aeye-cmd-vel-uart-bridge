@@ -15,7 +15,7 @@ def generate_launch_description():
             DeclareLaunchArgument("turning_radius", default_value="3.0"),
             DeclareLaunchArgument("max_steer_deg", default_value="30.0"),
             DeclareLaunchArgument("steer_mode", default_value="yaw_rate"),
-            DeclareLaunchArgument("invert_steer", default_value="false"),
+            DeclareLaunchArgument("invert_steer", default_value="true"),
             DeclareLaunchArgument("deadband_linear", default_value="0.02"),
             DeclareLaunchArgument("deadband_angular", default_value="0.02"),
             DeclareLaunchArgument("cmd_timeout", default_value="0.5"),

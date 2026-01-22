@@ -101,7 +101,8 @@ class CmdVelWsBridge(Node):
         self.declare_parameter("turning_radius", 1.7)
         self.declare_parameter("max_steer_deg", 30.0)
         self.declare_parameter("steer_mode", "yaw_rate")
-        self.declare_parameter("invert_steer", False)
+        self.declare_parameter("invert_steer", True)
+        self.declare_parameter("steer_limit", 1.0)
         self.declare_parameter("deadband_linear", 0.02)
         self.declare_parameter("deadband_angular", 0.02)
         self.declare_parameter("cmd_timeout", 0.5)
@@ -127,6 +128,7 @@ class CmdVelWsBridge(Node):
         self.max_steer_deg = float(self.get_parameter("max_steer_deg").value)
         self.steer_mode = str(self.get_parameter("steer_mode").value)
         self.invert_steer = bool(self.get_parameter("invert_steer").value)
+        self.steer_limit = float(self.get_parameter("steer_limit").value)
         self.deadband_linear = float(self.get_parameter("deadband_linear").value)
         self.deadband_angular = float(self.get_parameter("deadband_angular").value)
         self.cmd_timeout = float(self.get_parameter("cmd_timeout").value)
@@ -239,6 +241,12 @@ class CmdVelWsBridge(Node):
         if self.invert_steer:
             self.get_logger().info("invert_steer enabled")
 
+        if self.steer_limit < 0.0:
+            self.steer_limit = 0.0
+        if self.steer_limit > 1.0:
+            self.get_logger().warn("steer_limit > 1.0, clamping to 1.0")
+            self.steer_limit = 1.0
+
         self.brake_on_stop_percent = self._clamp(self.brake_on_stop_percent, 0, 100)
         self.brake_on_timeout_percent = self._clamp(
             self.brake_on_timeout_percent, 0, 100
@@ -331,6 +339,12 @@ class CmdVelWsBridge(Node):
 
         if self.invert_steer:
             steer_norm = -steer_norm
+
+        if self.steer_limit < 1.0:
+            if steer_norm > self.steer_limit:
+                steer_norm = self.steer_limit
+            if steer_norm < -self.steer_limit:
+                steer_norm = -self.steer_limit
 
         if steer_norm > 1.0:
             steer_norm = 1.0

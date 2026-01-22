@@ -32,7 +32,7 @@ def generate_launch_description():
                 "steer_mode", default_value="yaw_rate"
             ),
             DeclareLaunchArgument(
-                "invert_steer", default_value="false"
+                "invert_steer", default_value="true"
             ),
             DeclareLaunchArgument(
                 "deadband_linear", default_value="0.02"

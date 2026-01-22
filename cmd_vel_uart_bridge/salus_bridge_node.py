@@ -126,7 +126,7 @@ class SalusBridge(Node):
         self.declare_parameter("turning_radius", 1.7)
         self.declare_parameter("max_steer_deg", 30.0)
         self.declare_parameter("steer_mode", "yaw_rate")
-        self.declare_parameter("invert_steer", False)
+        self.declare_parameter("invert_steer", True)
         self.declare_parameter("deadband_linear", 0.02)
         self.declare_parameter("deadband_angular", 0.02)
         self.declare_parameter("cmd_timeout", 0.5)
