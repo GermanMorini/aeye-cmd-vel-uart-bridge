@@ -16,6 +16,7 @@ def generate_launch_description():
             DeclareLaunchArgument("max_steer_deg", default_value="30.0"),
             DeclareLaunchArgument("steer_mode", default_value="yaw_rate"),
             DeclareLaunchArgument("invert_steer", default_value="true"),
+            DeclareLaunchArgument("invert_steer_in_reverse", default_value="true"),
             DeclareLaunchArgument("steer_limit", default_value="1.0"),
             DeclareLaunchArgument("deadband_linear", default_value="0.02"),
             DeclareLaunchArgument("deadband_angular", default_value="0.02"),
@@ -52,6 +53,9 @@ def generate_launch_description():
                         "max_steer_deg": LaunchConfiguration("max_steer_deg"),
                         "steer_mode": LaunchConfiguration("steer_mode"),
                         "invert_steer": LaunchConfiguration("invert_steer"),
+                        "invert_steer_in_reverse": LaunchConfiguration(
+                            "invert_steer_in_reverse"
+                        ),
                         "steer_limit": LaunchConfiguration("steer_limit"),
                         "deadband_linear": LaunchConfiguration("deadband_linear"),
                         "deadband_angular": LaunchConfiguration("deadband_angular"),

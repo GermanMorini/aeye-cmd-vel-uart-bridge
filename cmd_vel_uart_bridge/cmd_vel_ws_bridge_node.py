@@ -102,6 +102,7 @@ class CmdVelWsBridge(Node):
         self.declare_parameter("max_steer_deg", 30.0)
         self.declare_parameter("steer_mode", "yaw_rate")
         self.declare_parameter("invert_steer", True)
+        self.declare_parameter("invert_steer_in_reverse", True)
         self.declare_parameter("steer_limit", 1.0)
         self.declare_parameter("deadband_linear", 0.02)
         self.declare_parameter("deadband_angular", 0.02)
@@ -128,6 +129,9 @@ class CmdVelWsBridge(Node):
         self.max_steer_deg = float(self.get_parameter("max_steer_deg").value)
         self.steer_mode = str(self.get_parameter("steer_mode").value)
         self.invert_steer = bool(self.get_parameter("invert_steer").value)
+        self.invert_steer_in_reverse = bool(
+            self.get_parameter("invert_steer_in_reverse").value
+        )
         self.steer_limit = float(self.get_parameter("steer_limit").value)
         self.deadband_linear = float(self.get_parameter("deadband_linear").value)
         self.deadband_angular = float(self.get_parameter("deadband_angular").value)
@@ -338,6 +342,8 @@ class CmdVelWsBridge(Node):
             )
 
         if self.invert_steer:
+            steer_norm = -steer_norm
+        if self.invert_steer_in_reverse and linear_x < -self.deadband_linear:
             steer_norm = -steer_norm
 
         if self.steer_limit < 1.0:

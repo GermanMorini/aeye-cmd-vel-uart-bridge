@@ -37,6 +37,7 @@ class CmdVelUartBridge(Node):
         self.declare_parameter("max_steer_deg", 30.0)
         self.declare_parameter("steer_mode", "yaw_rate")
         self.declare_parameter("invert_steer", True)
+        self.declare_parameter("invert_steer_in_reverse", True)
         self.declare_parameter("deadband_linear", 0.02)
         self.declare_parameter("deadband_angular", 0.02)
         self.declare_parameter("cmd_timeout", 0.5)
@@ -68,6 +69,9 @@ class CmdVelUartBridge(Node):
         self.max_steer_deg = float(self.get_parameter("max_steer_deg").value)
         self.steer_mode = str(self.get_parameter("steer_mode").value)
         self.invert_steer = bool(self.get_parameter("invert_steer").value)
+        self.invert_steer_in_reverse = bool(
+            self.get_parameter("invert_steer_in_reverse").value
+        )
         self.deadband_linear = float(self.get_parameter("deadband_linear").value)
         self.deadband_angular = float(self.get_parameter("deadband_angular").value)
         self.cmd_timeout = float(self.get_parameter("cmd_timeout").value)
@@ -278,6 +282,8 @@ class CmdVelUartBridge(Node):
             )
 
         if self.invert_steer:
+            steer_norm = -steer_norm
+        if self.invert_steer_in_reverse and linear_x < -self.deadband_linear:
             steer_norm = -steer_norm
 
         if steer_norm > 1.0:
