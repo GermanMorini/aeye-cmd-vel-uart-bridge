@@ -26,7 +26,7 @@ def generate_launch_description():
                 "min_effective_speed", default_value="0.0"
             ),
             DeclareLaunchArgument(
-                "linear_speed_offset", default_value="0.0"
+                "linear_speed_offset", default_value="1.2"
             ),
             DeclareLaunchArgument(
                 "max_angular_speed", default_value="1.7"

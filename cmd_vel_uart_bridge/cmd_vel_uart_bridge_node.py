@@ -32,7 +32,7 @@ class CmdVelUartBridge(Node):
         self.declare_parameter("max_linear_speed", 1.11)
         self.declare_parameter("max_accel_percent", 29)
         self.declare_parameter("min_effective_speed", 0.0)
-        self.declare_parameter("linear_speed_offset", 0.0)
+        self.declare_parameter("linear_speed_offset", 1.2)
         self.declare_parameter("max_angular_speed", 2.5)
         self.declare_parameter("turning_radius", 1.7)
         self.declare_parameter("max_steer_deg", 30.0)
@@ -159,11 +159,6 @@ class CmdVelUartBridge(Node):
             self.min_effective_speed = self.max_linear_speed
         if self.linear_speed_offset < 0.0:
             self.linear_speed_offset = 0.0
-        if self.linear_speed_offset > self.max_linear_speed:
-            self.get_logger().warn(
-                "linear_speed_offset > max_linear_speed, clamping to max_linear_speed"
-            )
-            self.linear_speed_offset = self.max_linear_speed
         if self.max_angular_speed <= 0.0:
             self.get_logger().warn("max_angular_speed <= 0, forcing 1.0")
             self.max_angular_speed = 1.0
