@@ -28,6 +28,10 @@ def _set_env(context, *args, **kwargs):
         "SALUS_WS_RESUME_HITS_REQUIRED",
         LaunchConfiguration("ws_resume_hits_required").perform(context),
     )
+    add_env(
+        "SALUS_MAX_ACCEL_PERCENT",
+        LaunchConfiguration("max_accel_percent").perform(context),
+    )
     add_env("SALUS_HTTP_HOST", LaunchConfiguration("http_host").perform(context))
     add_env("SALUS_HTTP_PORT", LaunchConfiguration("http_port").perform(context))
 
@@ -87,6 +91,7 @@ def generate_launch_description():
             DeclareLaunchArgument("ws_inactivity_brake_s", default_value="0.4"),
             DeclareLaunchArgument("ws_resume_min_interval_s", default_value="0.25"),
             DeclareLaunchArgument("ws_resume_hits_required", default_value="2"),
+            DeclareLaunchArgument("max_accel_percent", default_value="29"),
             DeclareLaunchArgument("http_host", default_value="0.0.0.0"),
             DeclareLaunchArgument("http_port", default_value="8000"),
             DeclareLaunchArgument("http_root", default_value=""),

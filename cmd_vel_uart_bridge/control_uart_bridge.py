@@ -75,6 +75,11 @@ WS_PATH = _env_str("SALUS_WS_PATH", "/controls")
 INACTIVITY_BRAKE_S = _env_float("SALUS_WS_INACTIVITY_S", 0.4)
 RESUME_MIN_INTERVAL_S = _env_float("SALUS_WS_RESUME_MIN_INTERVAL_S", 0.25)
 RESUME_HITS_REQUIRED = _env_int("SALUS_WS_RESUME_HITS_REQUIRED", 2)
+MAX_ACCEL_PERCENT = _env_int("SALUS_MAX_ACCEL_PERCENT", 29)
+if MAX_ACCEL_PERCENT < 0:
+    MAX_ACCEL_PERCENT = 0
+if MAX_ACCEL_PERCENT > 100:
+    MAX_ACCEL_PERCENT = 100
 
 HTTP_HOST = _env_str("SALUS_HTTP_HOST", "0.0.0.0")
 HTTP_PORT = _env_int("SALUS_HTTP_PORT", 8000)
@@ -126,8 +131,8 @@ def apply_web_command(payload):
     except (TypeError, ValueError):
         gear = 2
 
-    # Max torque: always use full accel range.
-    accel_limit = 100
+    # Limit outgoing accel to avoid full PWM on the vehicle.
+    accel_limit = MAX_ACCEL_PERCENT
     accel_cmd = int(throttle * accel_limit)
     steer_cmd = int(steer_norm * 100)
     now = time.time()

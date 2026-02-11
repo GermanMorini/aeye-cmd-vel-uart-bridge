@@ -29,9 +29,10 @@ class CmdVelUartBridge(Node):
         super().__init__("cmd_vel_uart_bridge")
 
         self.declare_parameter("cmd_vel_topic", "/cmd_vel_safe")
-        self.declare_parameter("max_linear_speed", 4.16)
+        self.declare_parameter("max_linear_speed", 1.11)
+        self.declare_parameter("max_accel_percent", 29)
         self.declare_parameter("min_effective_speed", 0.0)
-        self.declare_parameter("linear_speed_offset", 1.5)
+        self.declare_parameter("linear_speed_offset", 0.0)
         self.declare_parameter("max_angular_speed", 2.5)
         self.declare_parameter("turning_radius", 1.7)
         self.declare_parameter("max_steer_deg", 30.0)
@@ -58,6 +59,7 @@ class CmdVelUartBridge(Node):
 
         self.cmd_vel_topic = self.get_parameter("cmd_vel_topic").value
         self.max_linear_speed = float(self.get_parameter("max_linear_speed").value)
+        self.max_accel_percent = int(self.get_parameter("max_accel_percent").value)
         self.min_effective_speed = float(
             self.get_parameter("min_effective_speed").value
         )
@@ -142,6 +144,12 @@ class CmdVelUartBridge(Node):
         if self.max_linear_speed <= 0.0:
             self.get_logger().warn("max_linear_speed <= 0, forcing 1.0")
             self.max_linear_speed = 1.0
+        if self.max_accel_percent < 0:
+            self.get_logger().warn("max_accel_percent < 0, forcing 0")
+            self.max_accel_percent = 0
+        if self.max_accel_percent > 100:
+            self.get_logger().warn("max_accel_percent > 100, clamping to 100")
+            self.max_accel_percent = 100
         if self.min_effective_speed < 0.0:
             self.min_effective_speed = 0.0
         if self.min_effective_speed > self.max_linear_speed:
@@ -250,6 +258,9 @@ class CmdVelUartBridge(Node):
 
         throttle = self._normalize_linear(linear_x)
         accel_cmd = int(round(throttle * 100.0))
+        accel_cmd = self._clamp(
+            accel_cmd, -self.max_accel_percent, self.max_accel_percent
+        )
         steer_cmd = self._compute_steer_cmd(linear_x, angular_z)
 
         if abs(linear_x) <= self.deadband_linear and abs(angular_z) <= self.deadband_angular:

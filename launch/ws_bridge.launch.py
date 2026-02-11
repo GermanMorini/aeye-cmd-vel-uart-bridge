@@ -1,6 +1,6 @@
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
 
 
@@ -8,7 +8,14 @@ def generate_launch_description():
     return LaunchDescription(
         [
             DeclareLaunchArgument("cmd_vel_topic", default_value="/cmd_vel_safe"),
-            DeclareLaunchArgument("max_linear_speed", default_value="4.16"),
+            DeclareLaunchArgument("max_speed_kmh", default_value="4.0"),
+            DeclareLaunchArgument(
+                "max_linear_speed",
+                default_value=PythonExpression(
+                    [LaunchConfiguration("max_speed_kmh"), " / 3.6"]
+                ),
+            ),
+            DeclareLaunchArgument("max_accel_percent", default_value="29"),
             DeclareLaunchArgument("min_effective_speed", default_value="0.0"),
             DeclareLaunchArgument("linear_speed_offset", default_value="0.0"),
             DeclareLaunchArgument("max_angular_speed", default_value="1.7"),
@@ -42,6 +49,7 @@ def generate_launch_description():
                     {
                         "cmd_vel_topic": LaunchConfiguration("cmd_vel_topic"),
                         "max_linear_speed": LaunchConfiguration("max_linear_speed"),
+                        "max_accel_percent": LaunchConfiguration("max_accel_percent"),
                         "min_effective_speed": LaunchConfiguration(
                             "min_effective_speed"
                         ),

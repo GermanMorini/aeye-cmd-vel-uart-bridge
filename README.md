@@ -13,6 +13,14 @@ ros2 run cmd_vel_uart_bridge cmd_vel_uart_bridge
 ros2 launch cmd_vel_uart_bridge bridge.launch.py
 ```
 
+```bash
+ros2 launch cmd_vel_uart_bridge bridge.launch.py max_speed_kmh:=4.0
+```
+
+```bash
+ros2 launch cmd_vel_uart_bridge bridge.launch.py max_accel_percent:=29
+```
+
 Salus v2 bridge (optional alternative controller):
 
 ```bash
@@ -42,9 +50,11 @@ forwards `/cmd_vel_safe` after scaling and deadband.
 ## Parameters (selected)
 
 - `cmd_vel_topic` (string, default `/cmd_vel_safe`)
-- `max_linear_speed` (float, default `4.16` m/s)
+- `max_speed_kmh` (float, default `4.0`, converted internally to m/s)
+- `max_linear_speed` (float, default `1.11` m/s, ~4 km/h)
+- `max_accel_percent` (int, default `29`, hard cap for outgoing accel command)
 - `min_effective_speed` (float, default `0.0` m/s, minimum non-zero command)
-- `linear_speed_offset` (float, default `0.0` m/s in `ws_bridge`, added to non-zero commands)
+- `linear_speed_offset` (float, default `0.0` m/s, added to non-zero commands)
 - `max_angular_speed` (float, default `1.7` rad/s)
 - `turning_radius` (float, default `3.0` m, overrides `max_angular_speed` when > 0)
 - `max_steer_deg` (float, default `30.0` deg, max steering angle)
@@ -76,6 +86,7 @@ Web control launch arguments:
 - `ws_inactivity_brake_s` (float, default `0.4`)
 - `ws_resume_min_interval_s` (float, default `0.25`)
 - `ws_resume_hits_required` (int, default `2`)
+- `max_accel_percent` (int, default `29`, hard cap for outgoing accel command)
 - `http_host` (string, default `0.0.0.0`)
 - `http_port` (int, default `8000`)
 - `http_root` (string, default empty, auto-resolve)
@@ -92,7 +103,9 @@ WebSocket cmd_vel forwarder launch arguments:
 - `ws_reconnect_s` (float, default `1.0`)
 - `send_hz` (float, default `20.0`)
 - `cmd_vel_topic` (string, default `/cmd_vel_safe`)
-- `max_linear_speed` (float, default `4.16` m/s)
+- `max_speed_kmh` (float, default `4.0`, converted internally to m/s)
+- `max_linear_speed` (float, default `1.11` m/s, ~4 km/h)
+- `max_accel_percent` (int, default `29`, hard cap for outgoing accel command)
 - `min_effective_speed` (float, default `0.0` m/s, minimum non-zero command)
 - `linear_speed_offset` (float, default `0.0` m/s, added to non-zero commands)
 - `max_angular_speed` (float, default `1.7` rad/s)
@@ -113,9 +126,11 @@ WebSocket cmd_vel forwarder launch arguments:
 Salus v2 bridge launch arguments (optional alternative):
 
 - `cmd_vel_topic` (string, default `/cmd_vel_safe`)
-- `max_linear_speed` (float, default `4.16` m/s)
+- `max_speed_kmh` (float, default `4.0`, converted internally to m/s)
+- `max_linear_speed` (float, default `1.11` m/s, ~4 km/h)
+- `max_accel_percent` (int, default `29`, hard cap for outgoing accel command)
 - `min_effective_speed` (float, default `0.0` m/s, minimum non-zero command)
-- `linear_speed_offset` (float, default `1.5` m/s, added to non-zero commands)
+- `linear_speed_offset` (float, default `0.0` m/s, added to non-zero commands)
 - `max_angular_speed` (float, default `1.7` rad/s)
 - `turning_radius` (float, default `3.0` m, overrides `max_angular_speed` when > 0)
 - `max_steer_deg` (float, default `30.0` deg, max steering angle)
