@@ -96,7 +96,7 @@ class CmdVelWsBridge(Node):
         self.declare_parameter("cmd_vel_topic", "/cmd_vel_safe")
         self.declare_parameter("max_linear_speed", 4.16)
         self.declare_parameter("min_effective_speed", 0.0)
-        self.declare_parameter("linear_speed_offset", 1.5)
+        self.declare_parameter("linear_speed_offset", 0.0)
         self.declare_parameter("max_angular_speed", 2.5)
         self.declare_parameter("turning_radius", 1.7)
         self.declare_parameter("max_steer_deg", 30.0)
