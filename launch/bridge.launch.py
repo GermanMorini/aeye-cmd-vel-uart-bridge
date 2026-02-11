@@ -20,10 +20,10 @@ def generate_launch_description():
                 ),
             ),
             DeclareLaunchArgument(
-                "max_accel_percent", default_value="29"
+                "max_accel_percent", default_value="22"
             ),
             DeclareLaunchArgument(
-                "min_effective_speed", default_value="0.0"
+                "min_effective_speed", default_value="0.18"
             ),
             DeclareLaunchArgument(
                 "linear_speed_offset", default_value="0.0"

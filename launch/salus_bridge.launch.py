@@ -15,8 +15,8 @@ def generate_launch_description():
                     [LaunchConfiguration("max_speed_kmh"), " / 3.6"]
                 ),
             ),
-            DeclareLaunchArgument("max_accel_percent", default_value="29"),
-            DeclareLaunchArgument("min_effective_speed", default_value="0.0"),
+            DeclareLaunchArgument("max_accel_percent", default_value="22"),
+            DeclareLaunchArgument("min_effective_speed", default_value="0.18"),
             DeclareLaunchArgument("linear_speed_offset", default_value="0.0"),
             DeclareLaunchArgument("max_angular_speed", default_value="1.7"),
             DeclareLaunchArgument("turning_radius", default_value="3.0"),

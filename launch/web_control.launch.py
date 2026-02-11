@@ -91,7 +91,7 @@ def generate_launch_description():
             DeclareLaunchArgument("ws_inactivity_brake_s", default_value="0.4"),
             DeclareLaunchArgument("ws_resume_min_interval_s", default_value="0.25"),
             DeclareLaunchArgument("ws_resume_hits_required", default_value="2"),
-            DeclareLaunchArgument("max_accel_percent", default_value="29"),
+            DeclareLaunchArgument("max_accel_percent", default_value="22"),
             DeclareLaunchArgument("http_host", default_value="0.0.0.0"),
             DeclareLaunchArgument("http_port", default_value="8000"),
             DeclareLaunchArgument("http_root", default_value=""),

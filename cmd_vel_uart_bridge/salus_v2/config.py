@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     status_timeout_s: float = 0.5
     cmd_tx_period_s: float = 0.010
     direction_change_delay_s: float = 2.0
-    accel_ramp_time_s: float = 0.05
+    accel_ramp_time_s: float = 0.20
     inactivity_brake_s: float = 0.4
     resume_min_interval_s: float = 0.25
     resume_hits_required: int = 2
